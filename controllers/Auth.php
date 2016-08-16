@@ -159,30 +159,30 @@ class Auth extends \Ilch\Controller\Frontend
 
     public function registAction()
     {
-        if (isset($_SESSION['oauth_login']) && $_SESSION['oauth_login']['timestamp'] >= time()) {
-            $oauth = $_SESSION['oauth_login'];
-            $errors = new \Ilch\Validation\ErrorBag();
-
-            // Pull errors from $_SESSION and unset them
-            if (isset($_SESSION['errors'])) {
-                $errors->setErrors($_SESSION['errors']);
-                unset($_SESSION['errors']);
-            }
-
-            $old = array_dot($_SESSION, 'old', []);
-
-            if (isset($_SESSION['old'])) {
-                unset($_SESSION['old']);
-            }
-
-            $this->getView()->set('rules', $this->getConfig()->get('regist_rules'));
-            $this->getView()->set('errors', $errors);
-            $this->getView()->set('old', $old);
-            $this->getView()->set('user', $oauth['data']);
+        if (!isset($_SESSION['oauth_login']) || $_SESSION['oauth_login']['timestamp'] < time()) {
+            $this->addMessage('registExpired', 'danger');
+            $this->redirect(['module' => 'user', 'controller' => 'regist', 'action' => 'index']);
         }
 
-        $this->addMessage('registExpired', 'danger');
-        $this->redirect(['module' => 'user', 'controller' => 'regist', 'action' => 'index']);
+        $oauth = $_SESSION['oauth_login'];
+        $errors = new \Ilch\Validation\ErrorBag();
+
+        // Pull errors from $_SESSION and unset them
+        if (isset($_SESSION['errors'])) {
+            $errors->setErrors($_SESSION['errors']);
+            unset($_SESSION['errors']);
+        }
+
+        $old = array_dot($_SESSION, 'old', []);
+
+        if (isset($_SESSION['old'])) {
+            unset($_SESSION['old']);
+        }
+
+        $this->getView()->set('rules', $this->getConfig()->get('regist_rules'));
+        $this->getView()->set('errors', $errors);
+        $this->getView()->set('old', $old);
+        $this->getView()->set('user', $oauth['data']);
     }
 
     public function saveAction()
@@ -214,14 +214,13 @@ class Auth extends \Ilch\Controller\Frontend
             $userGroup = $groupMapper->getGroupById(2);
             $currentDate = new \Ilch\Date();
 
-            $user = new User();
-            $user->setName($input['userName']);
-            $user->setPassword((new PasswordService())->hash(PasswordService::generateSecurePassword(32)));
-            $user->setEmail($input['email']);
-            $user->setDateCreated($currentDate->format('Y-m-d H:i:s', true));
-            $user->addGroup($userGroup);
-
-            $user->setDateConfirmed($currentDate->format('Y-m-d H:i:s', true));
+            $user = (new User())
+                ->setName($input['userName'])
+                ->setPassword((new PasswordService())->hash(PasswordService::generateSecurePassword(32)))
+                ->setEmail($input['email'])
+                ->setDateCreated($currentDate->format('Y-m-d H:i:s', true))
+                ->addGroup($userGroup)
+                ->setDateConfirmed($currentDate->format('Y-m-d H:i:s', true));
 
             $userId = $registMapper->save($user);
 
