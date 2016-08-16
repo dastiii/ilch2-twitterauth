@@ -1,7 +1,6 @@
 <?php
 /**
  * @copyright Ilch 2.0
- * @package ilch
  */
 
 namespace Modules\Twitterauth\Controllers\Admin;
@@ -15,7 +14,7 @@ class Index extends \Ilch\Controller\Admin
                 'name' => 'api_keys',
                 'active' => false,
                 'icon' => 'fa fa-cog',
-                'url' => $this->getLayout()->getUrl(['controller' => 'index', 'action' => 'index'])
+                'url' => $this->getLayout()->getUrl(['controller' => 'index', 'action' => 'index']),
             ],
         ];
 
@@ -47,10 +46,13 @@ class Index extends \Ilch\Controller\Admin
             $this->getConfig()->set('twitterauth_consumer_key', $this->getRequest()->getPost('consumerKey'));
             $this->getConfig()->set('twitterauth_consumer_secret', $this->getRequest()->getPost('consumerSecret'));
             $this->getConfig()->set('twitterauth_access_token', $this->getRequest()->getPost('accessToken'));
-            $this->getConfig()->set('twitterauth_access_token_secret', $this->getRequest()->getPost('accessTokenSecret'));
+            $this->getConfig()->set(
+                'twitterauth_access_token_secret',
+                $this->getRequest()->getPost('accessTokenSecret')
+            );
             $this->addMessage('saveSuccess');
         }
-        
+
         $this->redirect(['action' => 'index']);
     }
 }
