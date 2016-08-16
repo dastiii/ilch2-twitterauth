@@ -1,0 +1,12 @@
+.twitterBlue {
+    color: #1DA1F2;
+    font-size: 32px;
+}
+
+span.social-logins > a.btn.btn-link.provider-twitter {
+    color: #1DA1F2;
+}
+
+span.social-logins > a.btn.btn-link.provider-twitter:hover {
+    color: #0c85d0;
+}
