@@ -7,19 +7,6 @@
             <?= $this->getTrans('add_a_password_and_email') ?>
         </div>
         <div class="panel-body">
-          <div class="media">
-            <div class="media-left">
-              <a href="#">
-                <img class="media-object" src="<?= $this->get('user')->profile_image_url_https ?>" alt="Profile picture <?= $this->get('user')->screen_name ?>">
-              </a>
-            </div>
-            <div class="media-body">
-              <h4 class="media-heading"><?= $this->get('user')->screen_name ?></h4>
-              <?= $this->get('user')->description; ?>
-            </div>
-          </div>
-        </div>
-        <div class="panel-body">
           <?php if ($this->get('errors')->hasErrors()): ?>
               <div class="alert alert-danger" role="alert">
                   <strong> <?=$this->getTrans('errorsOccured') ?>:</strong>
@@ -40,7 +27,7 @@
                            class="form-control"
                            id="userNameInput"
                            name="userName"
-                           value="<?= array_dot($this->get('old'), 'userName') ? array_dot($this->get('old'), 'userName') : $this->get('user')->screen_name ?>" />
+                           value="<?= array_dot($this->get('old'), 'userName') ? array_dot($this->get('old'), 'userName') : $this->get('user')['screen_name'] ?>" />
                 </div>
             </div>
             <div class="form-group <?= ! $this->get('errors')->hasError('email') ?: 'has-error' ?>">
