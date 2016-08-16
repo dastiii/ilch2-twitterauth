@@ -38,7 +38,7 @@ class Auth extends \Ilch\Controller\Frontend
             ->setConsumerSecret($this->getConfig()->get('twitterauth_consumer_secret'))
             ->setToken($this->getConfig()->get('twitterauth_access_token'))
             ->setTokenSecret($this->getConfig()->get('twitterauth_access_token_secret'))
-            ->setCallback('http://localhost:8000/index.php/twitterauth/auth/callback')
+            ->setCallback($this->getLayout()->getUrl(['module' => 'twitterauth', 'controller' => 'auth', 'action' => 'callback']))
             ->exec();
 
         if (!$auth->hasError()) {
@@ -73,84 +73,71 @@ class Auth extends \Ilch\Controller\Frontend
             ->exec();
 
         if (!$auth->hasError()) {
-            $oauth_token = isset($auth->getResult()['oauth_token']) ? $auth->getResult()['oauth_token'] : null;
-            $oauth_token_secret = isset($auth->getResult()['oauth_token_secret']) ? $auth->getResult()['oauth_token_secret'] : null;
+            $authProvider = new AuthProvider();
+            $data = $auth->getResult();
 
-            $verify = (new TwitterAuth())
-                ->setMethod('GET')
-                ->setUrl('https://api.twitter.com/1.1/account/verify_credentials.json')
-                ->setConsumerKey($this->getConfig()->get('twitterauth_consumer_key'))
-                ->setConsumerSecret($this->getConfig()->get('twitterauth_consumer_secret'))
-                ->setToken($oauth_token)
-                ->setTokenSecret($oauth_token_secret)
-                ->setWithout('oauth_callback')
-                ->exec();
+            $oauth_token = isset($data['oauth_token']) ? $data['oauth_token'] : null;
+            $oauth_token_secret = isset($data['oauth_token_secret']) ? $data['oauth_token_secret'] : null;
+            
+            $existingLink = $authProvider->providerAccountIsLinked('twitter', $data['user_id']);
 
-            if (!$verify->hasError()) {
-                $authProvider = new AuthProvider();
-                $existingLink = $authProvider->providerAccountIsLinked('twitter', $verify->getResult()->id_str);
+            if (loggedIn()) {
+                if ($authProvider->hasProviderLinked('twitter', currentUser()->getId())) {
+                    $this->addMessage('providerAlreadyLinked', 'danger');
+                    $this->redirect('/');
+                }
 
-                if (loggedIn()) {
-                    if ($authProvider->hasProviderLinked('twitter', currentUser()->getId())) {
-                        $this->addMessage('providerAlreadyLinked', 'danger');
-                        $this->redirect('/');
-                    }
-
-                    if ($existingLink === true) {
-                        $this->addMessage('accountAlreadyLinkedToDifferentUser', 'danger');
-                        $this->redirect('/');
-                    } else {
-                        $authProviderUser = (new AuthProviderUser())
-                            ->setIdentifier($verify->getResult()->id_str)
-                            ->setProvider('twitter')
-                            ->setOauthToken($oauth_token)
-                            ->setOauthTokenSecret($oauth_token_secret)
-                            ->setScreenName($verify->getResult()->screen_name)
-                            ->setUserId(currentUser()->getId());
-
-                        $link = $authProvider->linkProviderWithUser($authProviderUser);
-                        
-                        if ($link === true) {
-                            $this->addMessage('linkSuccess');
-                            $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
-                        } else {
-                            $this->addMessage('linkFailed', 'danger');
-                            $this->redirect('/');
-                        }
-                    }
+                if ($existingLink === true) {
+                    $this->addMessage('accountAlreadyLinkedToDifferentUser', 'danger');
+                    $this->redirect('/');
                 } else {
-                    if ($existingLink === true) {
-                        // TODO: Admin panel setting?
-                        $remember = false;
-                        $user_id = $authProvider->getUserIdByProvider('twitter', $verify->getResult()->id_str);
+                    $authProviderUser = (new AuthProviderUser())
+                        ->setIdentifier($data['user_id'])
+                        ->setProvider('twitter')
+                        ->setOauthToken($oauth_token)
+                        ->setOauthTokenSecret($oauth_token_secret)
+                        ->setScreenName($data['screen_name'])
+                        ->setUserId(currentUser()->getId());
 
-                        if (is_null($user_id)) {
-                            $this->addMessage('couldNotFindRequestedUser');
-                            $this->redirect('/');
-                        }
-
-                        if ($remember === false) {
-                            $_SESSION['user_id'] = $user_id;
-                        } else {
-                            // Remembertoken bla
-                        }
-
-                        $this->addMessage('loginSuccess');
-                        $this->redirect('/');
+                    $link = $authProvider->linkProviderWithUser($authProviderUser);
+                    
+                    if ($link === true) {
+                        $this->addMessage('linkSuccess');
+                        $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
                     } else {
-                        $_SESSION['oauth_login'] = [
-                            'oauth_token' => $auth->getResult()['oauth_token'],
-                            'oauth_token_secret' => $auth->getResult()['oauth_token_secret'],
-                            'data' => $verify->getResult(),
-                            'timestamp' => strtotime("+10 minutes"),
-                        ];
-                        
-                        $this->redirect(['action' => 'regist']);
+                        $this->addMessage('linkFailed', 'danger');
+                        $this->redirect('/');
                     }
                 }
             } else {
-                $this->addMessage('couldNotRetrieveCredentials', 'danger');
-                $this->redirect(['module' => 'user', 'controller' => 'regist', 'action' => 'index']);
+                if ($existingLink === true) {
+                    // TODO: Admin panel setting?
+                    $remember = false;
+                    $user_id = $authProvider->getUserIdByProvider('twitter', $data['user_id']);
+
+                    if (is_null($user_id)) {
+                        $this->addMessage('couldNotFindRequestedUser');
+                        $this->redirect('/');
+                    }
+
+                    if ($remember === false) {
+                        $_SESSION['user_id'] = $user_id;
+                    } else {
+                        // Remembertoken bla
+                    }
+
+                    $this->addMessage('loginSuccess');
+                    $this->redirect('/');
+                } else {
+                    $_SESSION['oauth_login'] = [
+                        'oauth_token' => $oauth_token,
+                        'oauth_token_secret' => $oauth_token_secret,
+                        'data' => $data,
+                        'timestamp' => strtotime("+5 minutes"),
+                    ];
+                    
+                    $this->redirect(['action' => 'regist']);
+                }
             }
         } else {
             $this->addMessage('requestDenied', 'danger');
@@ -234,11 +221,11 @@ class Auth extends \Ilch\Controller\Frontend
             $oauth = $_SESSION['oauth_login'];
 
             $authProviderUser = (new AuthProviderUser())
-                ->setIdentifier($oauth['data']->id_str)
+                ->setIdentifier($oauth['data']['user_id'])
                 ->setProvider('twitter')
                 ->setOauthToken($oauth['oauth_token'])
                 ->setOauthTokenSecret($oauth['oauth_token_secret'])
-                ->setScreenName($oauth['data']->screen_name)
+                ->setScreenName($oauth['data']['screen_name'])
                 ->setUserId($userId);
 
             unset($_SESSION['oauth_login']);
