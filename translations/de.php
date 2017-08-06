@@ -1,33 +1,79 @@
 <?php
+// COPYRIGHT (c) 2016 Tobias Schwarz
+//
+// MIT License
+//
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
+//
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+/**
+ * @copyright Tobias Schwarz
+ * @author Tobias Schwarz <code@tobias-schwarz.me>
+ * @license MIT
+ */
 return [
-    'menuSignInWithTwitter' => 'Anmelden mit Twitter',
-    'settings' => 'Einstellungen',
-    'api_keys' => 'API Keys',
+    'twitterauth.menu.signinwithtwitter' => 'Anmelden mit Twitter',
+    'twitterauth.menu.apikeys' => 'API Keys',
+    'twitterauth.menu.logs' => 'Logs',
 
-    'consumer_key' => 'Consumer Key (API Key)',
-    'consumer_secret' => 'Consumer Secret (API Secret)',
+    'twitterauth.logs' => 'Logs',
 
-    'access_token' => 'Access Token',
-    'access_token_secret' => 'Access Token Secret',
+    'twitterauth.settings' => 'Einstellungen',
+    'twitterauth.logmessages' => 'Logs',
 
-    'consumer_secret_set' => 'Consumer Secret wird aus Sicherheitsgründen nicht angezeigt.',
-    'access_token_secret_set' => 'Access Token Secret wird aus Sicherheitsgründen nicht angezeigt.',
+    'twitterauth.consumerkey' => 'Consumer Key (API Key)',
+    'twitterauth.consumersecret' => 'Consumer Secret (API Secret)',
 
-    'secret_info' => 'Consumer Secret (API Secret) und Access Token Secret müssen bei jeder Änderung an den folgenden Werten erneut eingetragen werden.',
+    'twitterauth.accesstoken' => 'Access Token',
+    'twitterauth.accesstokensecret' => 'Access Token Secret',
 
-    'get_your_keys' => 'Hole dir deine Keys und Secrets',
-    'get_your_keys_text' => 'Zunächst musst du eine App auf https://apps.twitter.com/ erstellen.',
+    'twitterauth.getyourkeys' => 'Um die folgenden Felder auszufüllen, musst du zunächst eine App auf %s erstellen.',
 
-    'twitter_auth' => 'Anmelden mit Twitter',
-    'add_a_password_and_email' => 'Bitte teile uns abschließend noch deine E-Mail-Adresse mit und wähle deinen Benutzernamen.',
+    'twitterauth.clearlogs' => 'Alle löschen',
+    'twitterauth.nologsfound' => 'Keine Logs vorhanden.',
 
-    'userName' => 'Benutzername',
-    'email' => 'E-Mail-Adresse',
+    'twitterauth.close' => 'Schließen',
 
-    'complete_registration' => 'Anmeldung abschließen...',
-    'cancel' => 'Abbrechen',
+    'twitterauth.twitterauth' => 'Anmelden mit Twitter',
+    'twitterauth.passwordandemailneeded' => 'Bitte teile uns abschließend noch deine E-Mail-Adresse mit und wähle deinen Benutzernamen.',
+    'twitterauth.rules' => 'Mit dem Klick auf "Anmeldung abschließen..." bestätigst du, dass du die nachfolgenden Regeln gelesen und akzeptierst hast.',
 
-    'unlinkedSuccessfully' => 'Verknüpfung wurde entfernt.',
-    'linkSuccess' => 'Konten erfolgreich verknüpft.',
+    'twitterauth.username' => 'Benutzername',
+    'twitterauth.email' => 'E-Mail-Adresse',
+
+    'twitterauth.completeregistration' => 'Anmeldung abschließen...',
+    'twitterauth.cancel' => 'Abbrechen',
+
+    'twitterauth.unlinkedsuccessfully' => 'Verknüpfung wurde entfernt.',
+    'twitterauth.linksuccess' => 'Konten erfolgreich verknüpft.',
+
+    'twitterauth.inspectinglogmessage' => 'Inspiziere Log-Message',
+    'twitterauth.confirmdelete' => 'Soll diese Log-Message wirklich gelöscht werden? Diese Aktion kann nicht rückgängig gemacht werden.',
+
+    'twitterauth.logdeletederror' => 'Der ausgewählte Log konnte nicht gelöscht werden.',
+    'twitterauth.logdeletedsuccessful' => 'Der ausgewählte Log wurde erfolgreich gelöscht.',
+
+    'twitterauth.authenticationFailure' => 'Es ist ein Fehler bei der Kommunikation mit der Twitter API aufgetreten, bitte versuche es später erneut.',
+    'twitterauth.methodnotallowed' => 'Diese HTTP-Methode ist nicht erlaubt',
+    'twitterauth.couldnotclearlog' => 'Der Log konnte nicht geleert werden.',
+    'twitterauth.loghasbeencleared' => 'Der Log wurde geleert.',
+    'twitterauth.confirmclear' => 'Möchtest du wirklich den gesamten Log löschen?',
+
+    'twitterauth.messages.registrationNotAllowed' => 'Die Anmeldung ist aktuell geschlossen.',
 ];
