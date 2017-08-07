@@ -1,5 +1,7 @@
 ## ilch2-twitterauth
 
+***Latest version: [1.0.0](https://github.com/dastiii/ilch2-twitterauth/archive/1.0.0.zip) (BETA)***
+
 #### Installation
 Alle Dateien und Ordner nach `application/modules/twitterauth` kopieren und anschließend unter `Module > Übersicht > Nicht installierte` installieren.
 
