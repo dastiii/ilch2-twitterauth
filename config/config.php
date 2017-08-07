@@ -12,7 +12,7 @@ class Config extends \Ilch\Config\Install
         'key' => 'twitterauth',
         'icon_small' => 'fa-twitter',
         'author' => 'Tobias Schwarz',
-        'version' => '1.0.0',
+        'version' => '1.0.0-beta.1',
         'languages' => [
             'de_DE' => [
                 'name' => 'Anmelden mit Twitter',
