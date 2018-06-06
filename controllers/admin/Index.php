@@ -1,7 +1,4 @@
 <?php
-/**
- * @copyright Ilch 2.0
- */
 
 namespace Modules\Twitterauth\Controllers\Admin;
 
