@@ -6,7 +6,7 @@
 Alle Dateien und Ordner nach `application/modules/twitterauth` kopieren und anschließend unter `Module > Übersicht > Nicht installierte` installieren.
 
 #### Usage
-Nach der Installation musst du dir zunächst auf [https://apps.twitter.com/](https://apps.twitter.com/) eine App erstellen und die Felder unter `Module > Anmelden mit Twitter > API Keys` mit deinen Daten ausfüllen.
+Nach der Installation musst du dir zunächst auf [https://developer.twitter.com/apps](https://developer.twitter.com/apps) eine App erstellen und die Felder unter `Module > Anmelden mit Twitter > API Keys` mit deinen Daten ausfüllen.
 
 Danach muss das Modul zunächst für Twitter aktiviert werden, navigiere hierzu nach `Benutzer > Authentifizierungsanbieter` und wähle `Anmelden mit Twitter` aus.
 
