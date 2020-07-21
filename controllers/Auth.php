@@ -25,15 +25,23 @@ class Auth extends Frontend
      */
     public function registAction()
     {
-        if (! array_dot($_SESSION, 'twitterauth.login') || array_dot($_SESSION, 'twitterauth.login.expires') < time()) {
-            $this->addMessage('registExpired', 'danger');
-            $this->redirect(['module' => 'user', 'controller' => 'regist', 'action' => 'index']);
+        if (loggedIn()) {
+            // Authenticated users should not be able to register another account while logged in.
+            $this->addMessage('twitterauth.messages.youAlreadyHaveAnAccount', 'danger');
+            $this->redirect('/');
         }
 
-        $oauth = array_dot($_SESSION, 'twitterauth.login');
+        if ($this->isAuthProcessExpired()) {
+            $this->addMessage('twitterauth.messages.registExpired', 'danger');
+            $this->redirect([
+                'module' => 'user',
+                'controller' => 'regist',
+                'action' => 'index'
+            ]);
+        }
 
         $this->getView()->set('rules', $this->getConfig()->get('regist_rules'));
-        $this->getView()->set('user', $oauth);
+        $this->getView()->set('user', array_dot($_SESSION, 'twitterauth.login'));
     }
 
     /**
@@ -41,13 +49,13 @@ class Auth extends Frontend
      */
     public function saveAction()
     {
-        if (!$this->getRequest()->isPost()) {
-            $this->addMessage('badRequest');
+        if (! $this->getRequest()->isPost()) {
+            $this->addMessage('twitterauth.messages.methodNotAllowed');
             $this->redirect('/');
         }
 
-        if (! array_dot($_SESSION, 'twitterauth.login') || array_dot($_SESSION, 'twitterauth.login.expires') < time()) {
-            $this->addMessage('badRequest');
+        if ($this->isAuthProcessExpired()) {
+            $this->addMessage('twitterauth.messages.registExpired');
             $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
         }
 
@@ -61,37 +69,28 @@ class Auth extends Frontend
             'email' => 'required|email|unique:users,email',
         ]);
 
-        if ($validation->isValid()) {
-            // register user
-            $registMapper = new UserMapper();
-            $groupMapper = new Group();
-            $userGroup = $groupMapper->getGroupById(2);
-            $currentDate = new \Ilch\Date();
+        if (! $validation->isValid()) {
+            $this->addMessage(implode(', ', $validation->getErrorBag()->getErrorMessages()), 'danger', true);
+            $this->redirect()
+                ->withInput()
+                ->withErrors($validation->getErrorBag())
+                ->to(['action' => 'regist']);
+        }
 
-            $user = (new User())
-                ->setName($input['userName'])
-                ->setPassword((new PasswordService())->hash(PasswordService::generateSecurePassword(32)))
-                ->setEmail($input['email'])
-                ->setDateCreated($currentDate->format('Y-m-d H:i:s', true))
-                ->addGroup($userGroup)
-                ->setDateConfirmed($currentDate->format('Y-m-d H:i:s', true));
-
-            $userId = $registMapper->save($user);
-
-            $oauth = array_dot($_SESSION, 'twitterauth.login');
+        try {
+            $user = $this->createUser($input['userName'], $input['email']);
+            $twitterUser = array_dot($_SESSION, 'twitterauth.login');
 
             $authProviderUser = (new AuthProviderUser())
-                ->setIdentifier($oauth['user_id'])
+                ->setIdentifier($twitterUser['user_id'])
                 ->setProvider('twitter')
-                ->setOauthToken($oauth['oauth_token'])
-                ->setOauthTokenSecret($oauth['oauth_token_secret'])
-                ->setScreenName($oauth['screen_name'])
-                ->setUserId($userId);
+                ->setOauthToken($twitterUser['oauth_token'])
+                ->setOauthTokenSecret($twitterUser['oauth_token_secret'])
+                ->setScreenName($twitterUser['screen_name'])
+                ->setUserId($user->getId());
 
-            $link = (new AuthProvider())->linkProviderWithUser($authProviderUser);
-
-            if ($link === true) {
-                $_SESSION['user_id'] = $userId;
+            if ((new AuthProvider())->linkProviderWithUser($authProviderUser)) {
+                $_SESSION['user_id'] = $user->getId();
 
                 $this->addMessage('twitterauth.linksuccess');
                 $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'index']);
@@ -99,36 +98,35 @@ class Auth extends Frontend
 
             $this->addMessage('twitterauth.linkfailed', 'danger');
             $this->redirect('/');
+        } catch (\Exception $e) {
+            $this->addMessage('twitterauth.messages.couldNotCreateUser', 'danger');
+            $this->redirect('/');
         }
-
-        $this->addMessage($validation->getErrorBag()->getErrorMessages(), 'danger', true);
-        $this->redirect()
-            ->withInput()
-            ->withErrors($validation->getErrorBag())
-            ->to(['action' => 'regist']);
     }
 
     public function unlinkAction()
     {
-        if (loggedIn()) {
-            if ($this->getRequest()->isPost()) {
-                $authProvider = new AuthProvider();
-                $res = $authProvider->unlinkUser('twitter', currentUser()->getId());
+        if (loggedIn() === false) {
+            $this->addMessage('twitterauth.notauthenticated', 'danger');
+            $this->redirect('/');
+        }
 
-                if ($res > 0) {
-                    $this->addMessage('twitterauth.unlinkedsuccessfully');
-                    $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
-                }
-
-                $this->addMessage('twitterauth.couldnotunlink', 'danger');
-                $this->redirect('/');
-            }
-
+        if ($this->getRequest()->isPost() === false) {
             $this->addMessage('twitterauth.badrequest', 'danger');
             $this->redirect('/');
         }
 
-        $this->addMessage('twitterauth.notauthenticated', 'danger');
+        $authProvider = new AuthProvider();
+        if ($authProvider->unlinkUser('twitter', currentUser()->getId())) {
+            $this->addMessage('twitterauth.unlinkedsuccessfully');
+            $this->redirect([
+                'module' => 'user',
+                'controller' => 'panel',
+                'action' => 'providers'
+            ]);
+        }
+
+        $this->addMessage('twitterauth.couldnotunlink', 'danger');
         $this->redirect('/');
     }
 
@@ -156,13 +154,9 @@ class Auth extends Frontend
 
             $this->redirect($auth->getAuthenticationEndpoint());
         } catch (\Exception $e) {
-            $this->addMessage('twitterauth.authenticationfailure', 'danger');
+            $this->addMessage('twitterauth.authenticationFailure', 'danger');
 
-            if (loggedIn()) {
-                $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
-            }
-
-            $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
+            $this->backToStart();
         }
     }
 
@@ -183,63 +177,41 @@ class Auth extends Frontend
             $twitterUser = $auth->getResult();
 
             $authProvider = new AuthProvider();
-            $existingLink = $authProvider->providerAccountIsLinked('twitter', $twitterUser['user_id']);
+            $providerAccountIsAlreadyLinked = $authProvider->providerAccountIsLinked('twitter', $twitterUser['user_id']);
 
-            if (loggedIn()) {
-                if ($authProvider->hasProviderLinked('twitter', currentUser()->getId())) {
-                    $this->dbLog()->info(
-                        "User " . currentUser()->getName() . " had provider already linked.",
-                        [
-                            'userId' => currentUser()->getId(),
-                            'userName' => currentUser()->getName(),
-                            'twitterAccount' => $twitterUser
-                        ]
-                    );
+            // Redirect the user to the regist action since he is actually registering a new account.
+            if (loggedIn() === false) {
+                // Provider account is linked, login as the linked user.
+                if ($providerAccountIsAlreadyLinked) {
+                    $userId = $authProvider->getUserIdByProvider('twitter', $twitterUser['user_id']);
 
-                    $this->addMessage('providerAlreadyLinked', 'danger');
-                    $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
+                    if (is_null($userId)) {
+                        $this->addMessage('twitterauth.couldNotFindRequestedUser');
+                        $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
+                    }
+
+                    $_SESSION['user_id'] = $userId;
+
+                    $this->addMessage('twitterauth.loginSuccessful');
+                    $this->redirect('/');
                 }
 
-                if ($existingLink === true) {
-                    $this->dbLog()->info(
-                        "User " . currentUser()->getName() . " tried to link an already linked twitter account.",
-                        [
-                            'userId' => currentUser()->getId(),
-                            'userName' => currentUser()->getName(),
-                            'twitterAccount' => $twitterUser
-                        ]
-                    );
-
-                    $this->addMessage('accountAlreadyLinkedToDifferentUser', 'danger');
-                    $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
+                // If no new registrations are allowed, redirect back to login.
+                if (! $this->getConfig()->get('regist_accept')) {
+                    $this->addMessage('twitterauth.messages.registrationNotAllowed', 'danger');
+                    $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
                 }
 
-                $authProviderUser = (new AuthProviderUser())
-                    ->setIdentifier($twitterUser['user_id'])
-                    ->setProvider('twitter')
-                    ->setOauthToken($twitterUser['oauth_token'])
-                    ->setOauthTokenSecret($twitterUser['oauth_token_user'])
-                    ->setScreenName($twitterUser['screen_name'])
-                    ->setUserId(currentUser()->getId());
+                array_dot_set($_SESSION, 'twitterauth.login', $twitterUser);
+                array_dot_set($_SESSION, 'twitterauth.login.expires', strtotime('+5 minutes'));
 
-                $link = $authProvider->linkProviderWithUser($authProviderUser);
+                $this->redirect(['action' => 'regist']);
+            }
 
-                if ($link === true) {
-                    $this->dbLog()->info(
-                        "User " . currentUser()->getName() . " has linked a twitter account.",
-                        [
-                            'userId' => currentUser()->getId(),
-                            'userName' => currentUser()->getName(),
-                            'twitterAccount' => $twitterUser
-                        ]
-                    );
-
-                    $this->addMessage('linkSuccess');
-                    $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
-                }
-
-                $this->dbLog()->error(
-                    "User " . currentUser()->getName() . " could not link his twitter account.",
+            // Redirect back if the user had this provider already linked with his account.
+            if ($authProvider->hasProviderLinked('twitter', currentUser()->getId())) {
+                $this->dbLog()->info(
+                    "User " . currentUser()->getName() . " had provider already linked.",
                     [
                         'userId' => currentUser()->getId(),
                         'userName' => currentUser()->getName(),
@@ -247,42 +219,75 @@ class Auth extends Frontend
                     ]
                 );
 
-                $this->addMessage('linkFailed', 'danger');
+                $this->addMessage('twitterauth.providerAlreadyLinked', 'danger');
+                $this->redirect([
+                    'module' => 'user',
+                    'controller' => 'panel',
+                    'action' => 'providers'
+                ]);
+            }
+
+            // Redirect back if the user tried to link his account to an already used provider account.
+            if ($providerAccountIsAlreadyLinked) {
+                $this->dbLog()->info(
+                    "User " . currentUser()->getName() . " tried to link an already linked twitter account.",
+                    [
+                        'userId' => currentUser()->getId(),
+                        'userName' => currentUser()->getName(),
+                        'twitterAccount' => $twitterUser
+                    ]
+                );
+
+                $this->addMessage('twitterauth.accountAlreadyLinkedToDifferentUser', 'danger');
                 $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
             }
 
-            if ($existingLink === true) {
-                $userId = $authProvider->getUserIdByProvider('twitter', $twitterUser['user_id']);
+            $authProviderUser = (new AuthProviderUser())
+                ->setIdentifier($twitterUser['user_id'])
+                ->setProvider('twitter')
+                ->setOauthToken($twitterUser['oauth_token'])
+                ->setOauthTokenSecret($twitterUser['oauth_token_user'])
+                ->setScreenName($twitterUser['screen_name'])
+                ->setUserId(currentUser()->getId());
 
-                if (is_null($userId)) {
-                    $this->addMessage('couldNotFindRequestedUser');
-                    $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
-                }
+            if ($authProvider->linkProviderWithUser($authProviderUser)) {
+                $this->dbLog()->info(
+                    "User " . currentUser()->getName() . " has linked a twitter account.",
+                    [
+                        'userId' => currentUser()->getId(),
+                        'userName' => currentUser()->getName(),
+                        'twitterAccount' => $twitterUser
+                    ]
+                );
 
-                $_SESSION['user_id'] = $userId;
-
-                $this->addMessage('loginSuccess');
-                $this->redirect('/');
+                $this->addMessage('twitterauth.linksuccess');
+                $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
             }
 
-            if ($existingLink === false && ! loggedIn() && ! $this->getConfig()->get('regist_accept')) {
-                $this->addMessage('twitterauth.messages.registrationNotAllowed', 'danger');
-                $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
-            }
+            $this->dbLog()->error(
+                "User " . currentUser()->getName() . " could not link his twitter account.",
+                [
+                    'userId' => currentUser()->getId(),
+                    'userName' => currentUser()->getName(),
+                    'twitterAccount' => $twitterUser
+                ]
+            );
 
-            array_dot_set($_SESSION, 'twitterauth.login', $twitterUser);
-            array_dot_set($_SESSION, 'twitterauth.login.expires', strtotime('+5 minutes'));
-
-            $this->redirect(['action' => 'regist']);
+            $this->addMessage('twitterauth.linkFailed', 'danger');
+            $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
         } catch (\Exception $e) {
-            $this->addMessage('twitterauth.authenticationfailure', 'danger');
+            $this->addMessage('twitterauth.authenticationFailure', 'danger');
 
-            if (loggedIn()) {
-                $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
-            } else {
-                $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
-            }
+            $this->backToStart();
         }
+    }
+
+    /**
+     * @return Boolean
+     */
+    protected function isAuthProcessExpired()
+    {
+        return ! array_dot($_SESSION, 'twitterauth.login') || array_dot($_SESSION, 'twitterauth.login.expires') < time();
     }
 
     /**
@@ -295,5 +300,49 @@ class Auth extends Frontend
         }
 
         return $this->dbLog = new DbLog();
+    }
+
+    /**
+     * Registers a user with the given name and email
+     *
+     * @param string $username
+     * @param string $email
+     * @return User
+     * @throws \Exception
+     */
+    protected function createUser(string $username, string $email): User
+    {
+        $registMapper = new UserMapper();
+        $groupMapper = new Group();
+        $userGroup = $groupMapper->getGroupById(2);
+        $currentDate = new \Ilch\Date();
+        $randomPassword = (new PasswordService())
+            ->hash(PasswordService::generateSecurePassword(32));
+
+        $user = (new User())
+            ->setName($username)
+            ->setPassword($randomPassword)
+            ->setEmail($email)
+            ->setDateCreated($currentDate)
+            ->addGroup($userGroup)
+            ->setDateConfirmed($currentDate);
+
+        if ($userId = $registMapper->save($user)) {
+            $user->setId($userId);
+        }
+
+        return $user;
+    }
+
+    // Redirects the user back to start. A loggedIn
+    // user is redirected to his profile page whereas
+    // a guest is redirected back to the login page.
+    protected function backToStart()
+    {
+        if (loggedIn()) {
+            $this->redirect(['module' => 'user', 'controller' => 'panel', 'action' => 'providers']);
+        }
+
+        $this->redirect(['module' => 'user', 'controller' => 'login', 'action' => 'index']);
     }
 }

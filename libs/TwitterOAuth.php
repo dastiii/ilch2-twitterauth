@@ -279,6 +279,8 @@ class TwitterOAuth {
         $response = curl_exec($request);
         $httpStatusCode = curl_getinfo($request, CURLINFO_HTTP_CODE);
 
+        var_dump($response);
+
         if ($httpStatusCode !== 200) {
             $this->dbLog->error('Twitter API responded with an error code', $response);
 

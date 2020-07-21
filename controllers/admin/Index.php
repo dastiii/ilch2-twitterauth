@@ -18,6 +18,12 @@ class Index extends Base
         ];
 
         $this->getView()->set('twitterauth', $output);
+        $this->getView()->set('callbackUrl', $this->redirect()->getUrl([
+            'module' => 'twitterauth',
+            'controller' => 'auth',
+            'action' => 'callback',
+        ], 'frontend'));
+        $this->getView()->set('debugging', $this->getConfig()->get('twitterauth_debugging'));
     }
 
     public function saveAction()
@@ -27,6 +33,7 @@ class Index extends Base
             $this->getConfig()->set('twitterauth_consumer_secret', $this->getRequest()->getPost('consumerSecret'));
             $this->getConfig()->set('twitterauth_access_token', $this->getRequest()->getPost('accessToken'));
             $this->getConfig()->set('twitterauth_access_token_secret', $this->getRequest()->getPost('accessTokenSecret'));
+            $this->getConfig()->set('twitterauth_debugging', $this->getRequest()->getPost('debugging'));
             $this->addMessage('saveSuccess');
         }
 

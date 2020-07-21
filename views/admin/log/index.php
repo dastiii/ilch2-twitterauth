@@ -72,7 +72,7 @@
 <div class="panel panel-default">
     <div class="panel-heading clearfix">
         <i class="fa fa-list"></i> <?= $this->getTrans('twitterauth.logmessages') ?>
-        <form action="<?= $this->getUrl(['action' => 'clear']) ?>" method="POST" class="pull-right">
+        <form id="clearAll" action="<?= $this->getUrl(['action' => 'clear']) ?>" method="POST" class="pull-right">
             <?= $this->getTokenField() ?>
 
             <button type="submit" class="btn btn-danger btn-xs" onClick="event.preventDefault();

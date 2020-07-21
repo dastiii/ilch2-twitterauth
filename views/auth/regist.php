@@ -33,15 +33,15 @@
                 </div>
             </div>
         </div>
-        <div class="panel-body">
-            <?= $this->get('rules') ?>
-        </div>
         <div class="bg-info panel-body">
             <?= $this->getTrans('twitterauth.rules') ?>
         </div>
+        <div class="panel-body">
+            <?= $this->get('rules') ?>
+        </div>
         <div class="panel-footer">
-            <button type="submit" class="btn btn-primary"><i class="fa fa-arrow-right"></i> <?= $this->getTrans('twitterauth.completeregistration') ?></button>
-            <a href="#" class="btn btn-default"><?= $this->getTrans('twitterauth.cancel') ?></a>
+            <button type="submit" class="btn btn-primary"><?= $this->getTrans('twitterauth.completeregistration') ?></button>
+            <a href="<?= $this->getUrl(['module' => 'user', 'controller' => 'login', 'action' => 'index']) ?>" class="btn btn-default"><?= $this->getTrans('twitterauth.cancel') ?></a>
         </div>
     </div>
 </form>
