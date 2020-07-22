@@ -6,13 +6,16 @@
 
 namespace Modules\TwitterAuth\Config;
 
+use Ilch\Config\Database;
+
 class Config extends \Ilch\Config\Install
 {
     public $config = [
         'key' => 'twitterauth',
         'icon_small' => 'fa-twitter',
         'author' => 'Tobias Schwarz',
-        'version' => '1.0.0-beta.1',
+        'version' => '1.0.1',
+        'link' => 'https://schwarz.id',
         'languages' => [
             'de_DE' => [
                 'name' => 'Anmelden mit Twitter',
@@ -23,7 +26,7 @@ class Config extends \Ilch\Config\Install
                 'description' => 'Allows users to sign in through twitter.',
             ],
         ],
-        'phpVersion' => '5.6',
+        'phpVersion' => '7.0',
         'ilchCore' => '2.0.0'
     ];
 
@@ -75,9 +78,19 @@ class Config extends \Ilch\Config\Install
         $this->db()->query('DROP TABLE IF EXISTS [prefix]_twitterauth_log');
     }
 
-    public function getUpdate()
+    public function getUpdate($installedVersion)
     {
-        //
+        $messages = [];
+
+        switch ($installedVersion) {
+            case "1.0.0":
+            case "1.0.0-beta.1":
+                (new Database($this->db()))->set('twitterauth_debugging', '0');
+
+                $messages[] = 'Debuggingeinstellung wurde erfolgreich angelegt und standardmäßig deaktiviert.';
+        }
+
+        return implode("<br>", $messages);
     }
 
     /**

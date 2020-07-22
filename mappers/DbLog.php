@@ -2,11 +2,22 @@
 
 namespace Modules\Twitterauth\Mappers;
 
+use Ilch\Config\Database;
 use Ilch\Date;
 use Ilch\Mapper;
 use Modules\Twitterauth\Models\Log;
 
 class DbLog extends Mapper {
+    protected $isDebugging = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $databaseConfig = new Database($this->db());
+        $this->isDebugging = $databaseConfig->get('twitterauth_debugging') === '1';
+    }
+
     /**
      * Shortcut for an info log message
      *
@@ -57,6 +68,10 @@ class DbLog extends Mapper {
      */
     public function log($type, $message, $data)
     {
+        if (! $this->isDebugging) {
+            return 0;
+        }
+
         if (! $this->isValidJson($data)) {
             $data = json_encode($data);
         }
