@@ -1,12 +1,12 @@
 ## ilch2-twitterauth
 
-***Latest version: [1.0.0-beta.1](https://github.com/dastiii/ilch2-twitterauth/releases/tag/v1.0.0-beta.1) (BETA)***
-
 #### Installation
 Alle Dateien und Ordner nach `application/modules/twitterauth` kopieren und anschließend unter `Module > Übersicht > Nicht installierte` installieren.
 
 #### Usage
-Nach der Installation musst du dir zunächst auf [https://developer.twitter.com/apps](https://developer.twitter.com/apps) eine App erstellen und die Felder unter `Module > Anmelden mit Twitter > API Keys` mit deinen Daten ausfüllen.
+Nach der Installation musst du dir zunächst auf [https://developer.twitter.com/apps](https://developer.twitter.com/apps) eine App erstellen und die Felder unter `Module > Anmelden mit Twitter > Einstellungen` mit deinen Daten ausfüllen. 
+
+**Wichtig:** Du musst bei der Erstellung deiner Twitter-App darauf achten, die richtige Callback-URL anzugeben. Diese findest du unter `Module > Anmelden mit Twitter > Einstellungen`
 
 Danach muss das Modul zunächst für Twitter aktiviert werden, navigiere hierzu nach `Benutzer > Authentifizierungsanbieter` und wähle `Anmelden mit Twitter` aus.
 
